@@ -1,0 +1,58 @@
+* {
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-weight: 200;
+}
+
+#container {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+
+h1 {
+  font-weight: 500;
+}
+
+li {
+  margin-bottom: 1em; 
+}
+
+td {
+  padding: 0.5em;
+  line-height: 1.5em;
+  border-bottom: 1px solid gray;
+}
+
+.max {
+  font-weight: bold;
+}
+
+video {
+  transform: scale(-1, 1);
+}
+
+canvas {
+  transform: scale(-1, 1);
+}
+
+#results {
+  margin: 10px;
+  word-wrap: break-word;
+}
+
+#results table {
+  margin: 10px;
+}
+
+span.tag {
+  margin-right: 0.5em;
+}
+
+span.category {
+}
+
+span.category-score {
+  font-size: 80%;
+  color: rgb(100, 100, 100);
+  margin-right: 0.5em;
+}

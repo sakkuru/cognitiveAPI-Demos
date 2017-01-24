@@ -1,0 +1,109 @@
+<!DOCTYPE>
+<html>
+  <head>
+    <script src="https://code.jquery.com/jquery-3.1.1.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+  </head>
+    
+  <body>
+    <h1>Emotion API with GetUserMedia DEMO</h1>
+    <div id='container'>
+      <video id='local-video' autoplay></video>
+      <canvas id='steel'></canvas>
+      <div id="results">
+        <table>
+          <tr id='anger'><td class='feature-name'>Anger: </td><td class='value'></td></tr>
+          <tr id='contempt'><td class='feature-name'>Contempt: </td><td class='value'></td></tr>
+          <tr id='disgust'><td class='feature-name'>Disgust: </td><td class='value'></td></tr>
+          <tr id='fear'><td class='feature-name'>Fear: </td><td class='value'></td></tr>
+          <tr id='happiness'><td class='feature-name'>Happiness: </td><td class='value'></td></tr>
+          <tr id='neutral'><td class='feature-name'>Neutral</td><td class='value'></td></tr>
+          <tr id='sadness'><td class='feature-name'>Sadness</td><td class='value'></td></tr>
+          <tr id='surprise'><td class='feature-name'>Surprise</td><td class='value'></td></tr>
+        </table>
+        <div id="caption"></div>
+        <div id="tags"></div>
+        <div id="raw"></div>
+      </div>
+    </div>
+
+    <script>
+      let localStream;
+      let video = $('video')[0];
+      const canvas = $('#steel')[0];
+      const context = canvas.getContext('2d');
+      const button = document.querySelector('button');
+      let img;
+      let b;
+      let res;
+      const endpoint = 'https://westus.api.cognitive.microsoft.com/emotion/v1.0/recognize';
+      const params = '';
+
+      const callAPIWithImageData = (blob) => {
+        const request = new XMLHttpRequest();
+        request.open('POST', endpoint);
+        request.setRequestHeader("Content-Type",'application/octet-stream');
+        request.setRequestHeader("Ocp-Apim-Subscription-Key","6bd093af52fe4a239b06a260fe9d689a");
+
+        request.onreadystatechange = () => {
+          switch(request.readyState){
+          case 4:
+            if ((200 <= request.status && request.status < 300) || (request.status == 304)) {
+              $("#raw .value").text(request.responseText);
+              const faces = JSON.parse(request.responseText);
+              for(let i in faces) {
+                const face = faces[i];
+                const scores = [];
+                for(let key in face.scores) {
+                  scores.push(face.scores[key]);
+                  $("#" + key + ' .value').text(face.scores[key]);
+                }
+                const maxScore = Math.max.apply(null, scores);
+                const maxKey = Object.keys(face.scores)[scores.indexOf(maxScore)];
+                $('.max').removeClass('max')
+                $("#" + maxKey).children().addClass("max");
+                const rect = face.faceRectangle;
+                context.rect(rect.left, rect.top, rect.width, rect.height);
+                context.lineWidth = 7;
+                context.strokeStyle = 'red';
+                context.stroke();
+              }
+            } else {
+              console.log(request.status);
+              setTimeout(() => {
+                canvas.toBlob(applyCognitive);
+              }, 5000);
+            }
+            break;
+          }
+        };
+        request.send(blob);
+      }
+
+      const drawImage = () => {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+      }
+
+      const callCognitiveAPI = () => {
+        canvas.toBlob(callAPIWithImageData);
+      }
+
+      navigator.mediaDevices.getUserMedia({audio:true, video:true}).then(stream => {
+        $('#local-video').prop('src', URL.createObjectURL(stream));
+
+        setTimeout(() => {
+          drawImage();
+          callCognitiveAPI();
+        }, 2000);
+
+        setInterval(() => {
+          drawImage();
+          callCognitiveAPI();
+        }, 10000);
+      });
+    </script>
+
+  </body>
+</html>
