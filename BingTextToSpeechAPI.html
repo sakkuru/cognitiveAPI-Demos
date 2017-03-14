@@ -27,7 +27,7 @@
   <h1>Bing Text To Speech API DEMO</h1>
   <div id='container'>
     <form>
-      <input type="text" name="speech-text">
+      <input type="text" name="speech-text" placeholder="hello">
       <input type="submit" value="submit">
     </form>
   </div>
@@ -48,6 +48,7 @@
           switch (request.readyState) {
             case 4:
               if ((200 <= request.status && request.status < 300) || (request.status == 304)) {
+                token = request.response;
                 resolve();
                 return;
               } else {
