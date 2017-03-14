@@ -48,8 +48,6 @@
           switch (request.readyState) {
             case 4:
               if ((200 <= request.status && request.status < 300) || (request.status == 304)) {
-                console.log(request.responseText);
-                token = request.responseText;
                 resolve();
                 return;
               } else {

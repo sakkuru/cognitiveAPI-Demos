@@ -57,12 +57,7 @@
     let video = $('video')[0];
     const canvas = $('#steel')[0];
     const context = canvas.getContext('2d');
-    const button = document.querySelector('button');
-    let img;
-    let b;
-    let res;
     const endpoint = 'https://westus.api.cognitive.microsoft.com/emotion/v1.0/recognize';
-    const params = '';
 
     const callAPIWithImageData = (blob) => {
       const request = new XMLHttpRequest();
