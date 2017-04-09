@@ -1,0 +1,198 @@
+<!DOCTYPE>
+<html>
+
+<head>
+  <script src="https://code.jquery.com/jquery-3.1.1.min.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<style>
+  input,
+  textarea {
+    padding: 10px;
+    border-radius: 3px;
+    border: 1px solid black;
+    font-size: 20px;
+  }
+  
+  form [type=text] {
+    width: 300px;
+  }
+  
+  textarea {
+    display: block;
+    margin: 10px 0;
+    width: 300px;
+    height: 100px;
+  }
+  
+  form [type=submit] {
+    background-color: #e0e0e0;
+  }
+</style>
+
+<body>
+  <h1>Text Translator API DEMO</h1>
+  <div id='container'>
+    <form>
+      <input type="text" name="input-text" placeholder="Enter text..">
+      <input type="submit" value="submit">
+      <div>
+        Detected Langage: <span id='detectedLang'></span>
+      </div>
+      <div id=targetLangSelector>Target Language: </div>
+
+      <input type="radio" name="category" value="generalnn" checked="checked">use NN
+      <input type="radio" name="category" value="general">general
+      <textarea name="translation" placeholder="Translation"></textarea>
+    </form>
+  </div>
+
+  <script>
+    const subscriptionKey = "713b460c03384e23a6ef967d4d4320e4";
+    const endpointForToken = 'https://api.cognitive.microsoft.com/sts/v1.0/issueToken';
+    const endpoint = "https://api.microsofttranslator.com/v2/http.svc";
+    let token = '';
+
+    const get = request => {
+      return new Promise((resolve, reject) => {
+        request.onreadystatechange = () => {
+          switch (request.readyState) {
+            case 4:
+              if ((200 <= request.status && request.status < 300) || (request.status == 304)) {
+                resolve(request.response);
+                return;
+              } else {
+                reject();
+              }
+          }
+        }
+        request.send();
+      })
+    }
+
+    const getToken = () => {
+      return new Promise((resolve, reject) => {
+        const request = new XMLHttpRequest();
+        request.open('POST', endpointForToken);
+        request.setRequestHeader("Ocp-Apim-Subscription-Key", subscriptionKey);
+        request.ContentType = "text/xml";
+
+        get(request).then(res => {
+          token = res;
+          resolve();
+        });
+      });
+    }
+
+    const getLanguagesForTranslate = () => {
+      return new Promise((resolve, reject) => {
+        const path = '/GetLanguagesForTranslate'
+        let params = "?appid=Bearer " + token;
+
+        const request = new XMLHttpRequest();
+        request.open('GET', endpoint + path + params);
+
+        get(request).then(res => {
+          const xmlDoc = $.parseXML(res);
+          const $xml = $(xmlDoc);
+          const lang = $xml.find("string");
+
+          let langText = [];
+          for (let i of lang) {
+            let $option = $(i).text();
+            langText.push($option)
+          }
+          resolve(langText);
+        });
+      })
+    }
+
+    const translate = text => {
+      return new Promise((resolve, reject) => {
+        const targetLang = $("#targetLang option:selected").text();
+        const category = $("[name=category]:checked").val();
+
+        const path = '/Translate'
+        let params = "?text=" + encodeURIComponent(text);
+        params += "&to=" + targetLang;
+        params += "&category=" + category;
+        params += "&appid=Bearer " + token;
+
+        const request = new XMLHttpRequest();
+        request.open('GET', endpoint + path + params);
+        request.setRequestHeader("Accept", "application/xml");
+
+        get(request).then(res => {
+          const xmlDoc = $.parseXML(res);
+          const $xml = $(xmlDoc);
+          const translation = $xml.find('string').text();
+          resolve(translation);
+        });
+      });
+    };
+
+    const detectLang = text => {
+      return new Promise((resolve, reject) => {
+        const path = '/Detect'
+        let params = "?text=" + encodeURIComponent(text);
+        params += "&appid=Bearer " + token;
+
+        const request = new XMLHttpRequest();
+        request.open('GET', endpoint + path + params);
+
+        get(request).then(res => {
+          const xmlDoc = $.parseXML(request.response);
+          const $xml = $(xmlDoc);
+          const lang = $xml.find("string").text();
+          resolve(lang);
+        });
+      })
+    }
+
+    const showLangList = list => {
+      let $select = $('<select>').attr('name', 'targetLang').attr('id', 'targetLang');
+      for (let i of list) {
+        let $option = $('<option>').attr('value', i).text(i);
+        if (i === 'en') $option.attr('selected', true);
+        $select.append($option);
+      }
+      $('#targetLangSelector').append($select)
+    }
+
+    const showDetectedLang = lang => {
+      $('#detectedLang').text(lang);
+    }
+
+    const showTranslated = translation => {
+      $('form [name=translation]').val(translation);
+    }
+
+    $("form").submit(e => {
+      e.preventDefault();
+      const text = $('form [name=input-text]').val();
+      detectLang(text)
+        .then(lang => {
+          return showDetectedLang(lang);
+        }).then(() => {
+          return translate(text);
+        }).then(translation => {
+          showTranslated(translation);
+        }).catch(err => {
+          console.log(err);
+        });
+    });
+
+    $(() => {
+      getToken()
+        .then(() => {
+          return getLanguagesForTranslate();
+        }).then(list => {
+          return showLangList(list);
+        });
+    });
+  </script>
+
+</body>
+
+</html>
