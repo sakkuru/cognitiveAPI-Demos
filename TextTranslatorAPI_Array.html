@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <script src="https://code.jquery.com/jquery-3.1.1.min.js"></script>
+  <link rel="stylesheet" href="style.css">
+  <meta charset="utf-8">
+</head>
+
+<style>
+  textarea {
+    padding: 10px;
+    border-radius: 3px;
+    border: 1px solid black;
+    /*font-size: 20px;*/
+  }
+  
+  form [type=text] {
+    width: 300px;
+  }
+  
+  textarea {
+    display: block;
+    margin: 10px 0;
+    width: 300px;
+    height: 100px;
+  }
+  
+  form [type=submit] {
+    background-color: #e0e0e0;
+  }
+</style>
+
+<body>
+  <h1>Text Translator API DEMO</h1>
+  <div id='container'>
+    <form>
+      <textarea name="input-text" placeholder="Enter csv or tsv">こんにちは
+おすすめのランチはどこですか?
+      </textarea>
+      <input type="submit" value="submit">
+      <div>
+        Detected Langage: <span id='detectedLang'></span>
+      </div>
+      <div id=targetLangSelector>Target Language: </div>
+
+      <input type="radio" name="category" value="generalnn" checked="checked">use NN
+      <input type="radio" name="category" value="general">general
+    </form>
+    <textarea id="send-xml" placeholder="XML to send"></textarea>
+    <form>
+      <textarea id="received-xml" placeholder="received XML"></textarea>
+      <input type="button" id='to-csv' value='to CSV'>
+    </form>
+    <textarea id="translated" placeholder="translated"></textarea>
+  </div>
+
+  <script>
+    const subscriptionKey = "713b460c03384e23a6ef967d4d4320e4";
+    const endpointForToken = 'https://api.cognitive.microsoft.com/sts/v1.0/issueToken';
+    const endpoint = "https://api.microsofttranslator.com/V2/Http.svc";
+    let token = '';
+
+    const get = request => {
+      return new Promise((resolve, reject) => {
+        request.onreadystatechange = () => {
+          switch (request.readyState) {
+            case 4:
+              if ((200 <= request.status && request.status < 300) || (request.status == 304)) {
+                resolve(request.response);
+                return;
+              } else {
+                reject();
+              }
+          }
+        }
+        request.send();
+      })
+    }
+
+    const getToken = () => {
+      return new Promise((resolve, reject) => {
+        const request = new XMLHttpRequest();
+        request.open('POST', endpointForToken);
+        request.setRequestHeader("Ocp-Apim-Subscription-Key", subscriptionKey);
+        request.ContentType = "text/xml";
+
+        get(request).then(res => {
+          console.log(res)
+          token = res;
+          resolve();
+        });
+      });
+    }
+
+    const getLanguagesForTranslate = () => {
+      return new Promise((resolve, reject) => {
+        const path = '/GetLanguagesForTranslate'
+        let params = "?appid=Bearer " + token;
+
+        const request = new XMLHttpRequest();
+        request.open('GET', endpoint + path + params);
+
+        get(request).then(res => {
+          const xmlDoc = $.parseXML(res);
+          const $xml = $(xmlDoc);
+          const lang = $xml.find("string");
+
+          let langText = [];
+          for (let i of lang) {
+            let $option = $(i).text();
+            langText.push($option)
+          }
+          resolve(langText);
+        });
+      })
+    }
+
+    const parseCSV = text => {
+      return new Promise((resolve, reject) => {
+        const lines = text.split("\n");
+        const string_begin = '<string xmlns="http://schemas.microsoft.com/2003/10/Serialization/Arrays">';
+        const string_end = '</string>';
+        let xml = '';
+        for (let line of lines) {
+          xml += string_begin + line + string_end;
+        }
+        resolve(xml);
+      });
+    }
+
+    const translateArray = textXML => {
+      return new Promise((resolve, reject) => {
+        const targetLang = $("#targetLang option:selected").text();
+        const category = $("[name=category]:checked").val();
+
+        const path = '/TranslateArray';
+
+        let xml = '';
+        xml += '<TranslateArrayRequest>' +
+          '<AppId>' + 'Bearer ' + token + '</AppId>' +
+          '<Category xmlns="http://schemas.datacontract.org/2004/07/Microsoft.MT.Web.Service.V2">generalnn</Category>' +
+          // '<from >' +  language - code '</from>' + 
+          '<Texts>' +
+          textXML +
+          '</Texts>' +
+          '<To>' + targetLang + '</To>' +
+          '</TranslateArrayRequest>';
+
+        console.log(xml);
+
+        //show XML to send
+        $('#send-xml').val(xml);
+        console.log($('textarea#send-xml'));
+
+        const request = new XMLHttpRequest();
+        request.open('POST', 'https://api.microsofttranslator.com/v2/http.svc/TranslateArray');
+        // request.setRequestHeader("Content-type", "text/xml");
+        request.setRequestHeader("Content-type", "text/plain");
+
+        // get(request).then(res => {
+        //   console.log(res)
+        //   const xmlDoc = $.parseXML(res);
+        //   const $xml = $(xmlDoc);
+        //   const translation = $xml.find('string').text();
+        //   resolve(translation);
+        // });
+      });
+    };
+
+    const detectLang = text => {
+      return new Promise((resolve, reject) => {
+        const path = '/Detect'
+        let params = "?text=" + encodeURIComponent(text);
+        params += "&appid=Bearer " + token;
+
+        const request = new XMLHttpRequest();
+        request.open('GET', endpoint + path + params);
+
+        get(request).then(res => {
+          const xmlDoc = $.parseXML(request.response);
+          const $xml = $(xmlDoc);
+          const lang = $xml.find("string").text();
+          resolve(lang);
+        });
+      })
+    }
+
+    const showLangList = list => {
+      let $select = $('<select>').attr('name', 'targetLang').attr('id', 'targetLang');
+      for (let i of list) {
+        let $option = $('<option>').attr('value', i).text(i);
+        if (i === 'en') $option.attr('selected', true);
+        $select.append($option);
+      }
+      $('#targetLangSelector').append($select)
+    }
+
+    const showDetectedLang = lang => {
+      $('#detectedLang').text(lang);
+    }
+
+    const showTranslated = translation => {
+      $('form [name=translation]').val(translation);
+    }
+
+    const convertToCSV = xml => {
+      console.log(xml)
+
+      const xmlDoc = $.parseXML(xml);
+      const $xml = $(xmlDoc);
+      console.log($xml)
+      const translated = $xml.find("TranslatedText");
+      const translatedTexts = [];
+
+      for (let o of translated) {
+        console.log(o.textContent);
+        translatedTexts.push(o.textContent);
+      }
+      $('#translated').text(translatedTexts.join('\n'));
+    }
+
+    $("form").submit(e => {
+      e.preventDefault();
+      const text = $('form [name=input-text]').val();
+      console.log(text);
+      let xml;
+      parseCSV(text)
+        .then(res => {
+          xml = res;
+          return detectLang(text)
+        }).then(lang => {
+          return showDetectedLang(lang);
+        }).then(() => {
+          console.log(xml)
+          return translateArray(xml);
+        }).then(translation => {
+          // showTranslated(translation);
+        }).catch(err => {
+          console.log(err);
+        });
+    });
+
+    $('#to-csv').click(e => {
+      const xml = $('#received-xml').val();
+      convertToCSV(xml);
+    });
+
+    $(() => {
+      getToken()
+        .then(() => {
+          return getLanguagesForTranslate();
+        }).then(list => {
+          return showLangList(list);
+        });
+    });
+  </script>
+
+</body>
+
+</html>
