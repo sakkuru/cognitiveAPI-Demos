@@ -48,14 +48,14 @@
     const video = $('video')[0];
     const canvas = $('#steel')[0];
     const context = canvas.getContext('2d');
-    const endpoint = 'https://westus.api.cognitive.microsoft.com/vision/v1.0/analyze';
+    const endpoint = 'https://southeastasia.api.cognitive.microsoft.com/vision/v1.0/analyze';
     const params = 'visualFeatures=Categories,Tags,Description,Faces&language=en';
 
     const callAPIWithImageData = (blob) => {
       const request = new XMLHttpRequest();
       request.open('POST', endpoint + '?' + params);
       request.setRequestHeader("Content-Type", 'application/octet-stream');
-      request.setRequestHeader("Ocp-Apim-Subscription-Key", "43bc3c7bb567492d82571010c0492256");
+      request.setRequestHeader("Ocp-Apim-Subscription-Key", "0c4ecaa4b36c415681046f775568665e");
 
       request.onreadystatechange = () => {
         switch (request.readyState) {
