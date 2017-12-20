@@ -2,120 +2,120 @@
 <html>
 
 <head>
-  <script src="https://code.jquery.com/jquery-3.1.1.min.js"></script>
-  <link rel="stylesheet" href="style.css">
+    <script src="https://code.jquery.com/jquery-3.1.1.min.js"></script>
+    <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
-  <h1>Face API with GetUserMedia DEMO</h1>
-  <div id='container'>
-    <video id='local-video' autoplay></video>
-    <canvas id='steel'></canvas>
-    <div id="results">
-      <table>
-        <tr id='attributes'>
-          <td class='feature-name'>All Attributes: </td>
-          <td class='value'></td>
-        </tr>
-        <tr id='landmarks'>
-          <td class='feature-name'>All Landmarks: </td>
-          <td class='value'></td>
-        </tr>
-        <tr id='raw'>
-          <td class='feature-name'>All</td>
-          <td class='value'></td>
-        </tr>
-      </table>
-      <div id="caption"></div>
-      <div id="tags"></div>
-      <div id="raw"></div>
+    <h1>Face API with GetUserMedia DEMO</h1>
+    <div id='container'>
+        <video id='local-video' autoplay></video>
+        <canvas id='steel'></canvas>
+        <div id="results">
+            <table>
+                <tr id='attributes'>
+                    <td class='feature-name'>All Attributes: </td>
+                    <td class='value'></td>
+                </tr>
+                <tr id='landmarks'>
+                    <td class='feature-name'>All Landmarks: </td>
+                    <td class='value'></td>
+                </tr>
+                <tr id='raw'>
+                    <td class='feature-name'>All</td>
+                    <td class='value'></td>
+                </tr>
+            </table>
+            <div id="caption"></div>
+            <div id="tags"></div>
+            <div id="raw"></div>
+        </div>
     </div>
-  </div>
 
-  <script>
-    const video = $('video')[0];
-    const canvas = $('#steel')[0];
-    const context = canvas.getContext('2d');
-    const endpoint = 'https://westus.api.cognitive.microsoft.com/face/v1.0/detect';
-    const params = 'returnFaceLandmarks=true&returnFaceAttributes=age,gender,headPose,smile,facialHair,glasses';
+    <script>
+        const video = $('video')[0];
+        const canvas = $('#steel')[0];
+        const context = canvas.getContext('2d');
+        const endpoint = 'https://southeastasia.api.cognitive.microsoft.com/face/v1.0/detect';
+        const params = 'returnFaceLandmarks=true&returnFaceAttributes=age,gender,headPose,smile,facialHair,glasses';
 
-    const callAPIWithImageData = (blob) => {
-      const request = new XMLHttpRequest();
-      request.open('POST', endpoint + '?' + params);
-      request.setRequestHeader("Content-Type", 'application/octet-stream');
-      request.setRequestHeader("Ocp-Apim-Subscription-Key", "63439ac73ee0434a90507240343e1169");
+        const callAPIWithImageData = (blob) => {
+            const request = new XMLHttpRequest();
+            request.open('POST', endpoint + '?' + params);
+            request.setRequestHeader("Content-Type", 'application/octet-stream');
+            request.setRequestHeader("Ocp-Apim-Subscription-Key", "d3b15999500349928a29da754b70d9a2");
 
-      request.onreadystatechange = () => {
-        switch (request.readyState) {
-          case 4:
-            if (request.status === 200) {
-              $("#raw .value").text(request.responseText);
-              const faces = JSON.parse(request.responseText);
-              for (let i in faces) {
-                const face = faces[i];
-                $("#attributes" + ' .value').text(JSON.stringify(face.faceAttributes));
-                $("#landmarks" + ' .value').text(JSON.stringify(face.faceLandmarks));
+            request.onreadystatechange = () => {
+                switch (request.readyState) {
+                    case 4:
+                        if (request.status === 200) {
+                            $("#raw .value").text(request.responseText);
+                            const faces = JSON.parse(request.responseText);
+                            for (let i in faces) {
+                                const face = faces[i];
+                                $("#attributes" + ' .value').text(JSON.stringify(face.faceAttributes));
+                                $("#landmarks" + ' .value').text(JSON.stringify(face.faceLandmarks));
 
-                drawFaceLandmarks(face);
-              }
-            } else {
-              setTimeout(() => {
-                callCognitiveAPI();
-              }, 5000);
-            }
-            break;
+                                drawFaceLandmarks(face);
+                            }
+                        } else {
+                            setTimeout(() => {
+                                callCognitiveAPI();
+                            }, 5000);
+                        }
+                        break;
+                }
+            };
+            request.send(blob);
         }
-      };
-      request.send(blob);
-    }
 
-    const drawImage = () => {
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      context.drawImage(video, 0, 0, canvas.width, canvas.height);
-    }
+        const drawImage = () => {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        }
 
-    const drawFaceLandmarks = (face) => {
-      if (face.faceRectangle) {
-        // face rectangle
-        context.lineWidth = 7;
-        context.strokeStyle = 'red';
-        context.rect(face.faceRectangle.left, face.faceRectangle.top, face.faceRectangle.width, face.faceRectangle.height);
-        context.stroke();
-      }
+        const drawFaceLandmarks = (face) => {
+            if (face.faceRectangle) {
+                // face rectangle
+                context.lineWidth = 7;
+                context.strokeStyle = 'red';
+                context.rect(face.faceRectangle.left, face.faceRectangle.top, face.faceRectangle.width, face.faceRectangle.height);
+                context.stroke();
+            }
 
-      if (face.faceLandmarks) {
-        // landmarks
-        context.fillStyle = "red";
-        context.fillRect(face.faceLandmarks.pupilRight.x, face.faceLandmarks.pupilRight.y, 10, 10);
-        context.fillRect(face.faceLandmarks.pupilLeft.x, face.faceLandmarks.pupilLeft.y, 10, 10);
-        context.fillRect(face.faceLandmarks.noseTip.x, face.faceLandmarks.noseTip.y, 10, 10);
-        context.fillRect(face.faceLandmarks.mouthRight.x, face.faceLandmarks.mouthRight.y, 10, 10);
-        context.fillRect(face.faceLandmarks.mouthLeft.x, face.faceLandmarks.mouthLeft.y, 10, 10);
-      }
-    }
+            if (face.faceLandmarks) {
+                // landmarks
+                context.fillStyle = "red";
+                context.fillRect(face.faceLandmarks.pupilRight.x, face.faceLandmarks.pupilRight.y, 10, 10);
+                context.fillRect(face.faceLandmarks.pupilLeft.x, face.faceLandmarks.pupilLeft.y, 10, 10);
+                context.fillRect(face.faceLandmarks.noseTip.x, face.faceLandmarks.noseTip.y, 10, 10);
+                context.fillRect(face.faceLandmarks.mouthRight.x, face.faceLandmarks.mouthRight.y, 10, 10);
+                context.fillRect(face.faceLandmarks.mouthLeft.x, face.faceLandmarks.mouthLeft.y, 10, 10);
+            }
+        }
 
-    const callCognitiveAPI = () => {
-      canvas.toBlob(callAPIWithImageData);
-    }
+        const callCognitiveAPI = () => {
+            canvas.toBlob(callAPIWithImageData);
+        }
 
-    navigator.mediaDevices.getUserMedia({
-      audio: true,
-      video: true
-    }).then(stream => {
-      $('#local-video').prop('src', URL.createObjectURL(stream));
+        navigator.mediaDevices.getUserMedia({
+            audio: true,
+            video: true
+        }).then(stream => {
+            $('#local-video').prop('src', URL.createObjectURL(stream));
 
-      setTimeout(() => {
-        drawImage();
-        callCognitiveAPI();
-      }, 2000);
+            setTimeout(() => {
+                drawImage();
+                callCognitiveAPI();
+            }, 2000);
 
-      setInterval(() => {
-        drawImage();
-        callCognitiveAPI();
-      }, 10000);
-    });
-  </script>
+            setInterval(() => {
+                drawImage();
+                callCognitiveAPI();
+            }, 10000);
+        });
+    </script>
 
 </body>
 
